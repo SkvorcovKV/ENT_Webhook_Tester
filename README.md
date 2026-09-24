@@ -116,9 +116,9 @@ limitations under the License.
 
 📧 Email: skvorcovkv@mail.ru
 
-🐛 Issue tracker: GitHub Issues https://github.com/SkvorcovKV/data-exchange-service/issues
+🐛 Issue tracker: GitHub Issues https://github.com/SkvorcovKV//issues
 
-📋 Документация: Wiki https://github.com/SkvorcovKV/data-exchange-service/wiki
+📋 Документация: Wiki https://github.com/SkvorcovKV/ENT_Webhook_Tester/wiki
 
 ---
 
@@ -128,10 +128,11 @@ limitations under the License.
 
 ---
 
-📄 Документация и лицензия
-📖 Инструкция пользователя
-🔗 Настройка HTTP-интеграции в ПО «ЭНТ»
-⚖️ Использование программы регулируется файлом EULA.txt. Все права защищены.
+## 📄 Документация и лицензия
+
+- 📖 [Инструкция пользователя](UserGuide.txt) — подробное руководство по установке и использованию программы.
+
+- ⚖️ [Лицензионное соглашение (EULA)](EULA.txt) — использование программы регулируется этим документом. Все права защищены.
 
 ---
 
