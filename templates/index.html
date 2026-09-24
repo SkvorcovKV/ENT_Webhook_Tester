@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ЭНТ Webhook Tester</title>
+    <link rel="icon" href="{{ url_for('static', filename='icon.ico') }}" type="image/x-icon">
+    <!-- Подключаем ТВОЮ дизайн-систему -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
+    <!-- Подключаем ТВОЮ дизайн-систему -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    
+    <style>
+        /* ДОПОЛНЕНИЯ К ДИЗАЙН-СИСТЕМЕ */
+        .settings-grid {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+        .settings-col {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        /* Значки (Бейджи) для статусов */
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+        }
+        .badge-success { background-color: #A3E635; color: #1E2923; }
+        .badge-danger { background-color: #FF6B6B; }
+        .badge-warning { background-color: #F59E0B; color: #1E2923; }
+        .badge-info { background-color: #6C4F9F; }
+        .badge-secondary { background-color: #E2D9F0; color: #4A3770; }
+
+        /* Блок с URL */
+        .url-block {
+            background: #F8F5FF;
+            padding: 16px 20px;
+            border-radius: 12px;
+            border: 1px solid #E2D9F0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .url-block code {
+            font-size: 0.95em;
+            color: #2D2A3A;
+            word-break: break-all;
+        }
+        
+        /* Текст внутри ячеек таблицы */
+        .log-data-item { margin-bottom: 4px; }
+        .log-data-item strong { color: #6C4F9F; }
+
+        /* === АНИМАЦИЯ ПУЛЬСАЦИИ ДЛЯ ИНДИКАТОРА "ОНЛАЙН" === */
+        @keyframes pulse { 
+            0% { opacity: 1; }    /* В начале: полностью видимый */
+            50% { opacity: 0.3; } /* В середине: почти прозрачный */
+            100% { opacity: 1; }  /* В конце: снова видимый */
+        }
+
+        /* === СТИЛИ ДЛЯ ИНДИКАТОРА СТАТУСЫ (ПУЛЬС) === */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s ease; /* Плавное изменение цветов */
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        /* Когда сервер ОТВЕЧАЕТ (Онлайн) */
+        .status-badge.online {
+            background-color: #A3E635; /* Салатовый */
+            color: #1E2923;
+            box-shadow: 0 2px 5px rgba(163, 230, 53, 0.3);
+        }
+        .status-badge.online .status-dot {
+            background-color: #1E2923;
+            animation: pulse 2s infinite; /* Анимация включена */
+        }
+
+        /* Когда сервер МОЛЧИТ (Офлайн) */
+        .status-badge.offline {
+            background-color: #FF6B6B; /* Красный */
+            color: white;
+            box-shadow: 0 2px 5px rgba(255, 107, 107, 0.3);
+        }
+        .status-badge.offline .status-dot {
+            background-color: white;
+            animation: none; /* Анимация выключена */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ШАПКА -->
+    <header>
+        <div class="header-content">
+            <div class="header-left">
+                <div class="main-title">🪝 ENT Webhook Tester</div>
+                <div class="sub-title">Настройка HTTP-интеграции</div>
+            </div>
+            <div class="header-right">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Логотип" class="logo">
+            </div>
+        </div>
+    </header>
+
+    <!-- ВКЛАДКИ -->
+    <div class="tabs">
+        <button class="tab-button active" onclick="openTab(event, 'settings')">⚙️ Настройки</button>
+        <button class="tab-button" onclick="openTab(event, 'journal')">📓 Журнал</button>
+    </div>
+
+    <!-- КОНТЕНТ -->
+    <div class="tab-content">
+        
+        <!-- ВКЛАДКА: НАСТРОЙКИ -->
+        <div id="settings" class="tab-pane active">
+            <div class="form-panel">
+                <h3>⚙️ Панель управления ответами</h3>
+                
+                <!-- Порт -->
+                <div class="form-group">
+                    <label for="serverPort">
+                        Порт сервера 
+                        <!-- Этот span будет показываться только через JavaScript -->
+                        <span id="restartBadge" style="display: none; background-color: #F59E0B; color: #1E2923; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; margin-left: 8px;">
+                            Требует перезапуска 
+                            <!-- НОВАЯ КНОПКА ПЕРЕЗАПУСКА -->
+                            <button onclick="shutdownServer()" style="background: #1E2923; color: #F59E0B; border: none; padding: 2px 8px; border-radius: 8px; margin-left: 8px; cursor: pointer; font-weight: bold; font-size: 11px;">
+                                ⏹️ Остановить сейчас
+                            </button>
+                        </span>
+                    </label>
+                    <div style="display: flex; gap: 10px; align-items: center; max-width: 300px;">
+                        <input type="number" id="serverPort" value="8080" min="1024" max="65535">
+                        <button class="btn btn-secondary" type="button" onclick="saveSettings()">Применить</button>
+                    </div>
+                    <span class="form-text">По умолчанию 8080. Если порт занят, укажите другой и перезапустите программу.</span>
+                </div>
+
+                <!-- Две колонки -->
+                <div class="settings-grid">
+                    <!-- Левая: Режимы -->
+                    <div class="settings-col">
+                        <h3 style="font-size: 1.1em;">1. Выберите режим ответа</h3>
+                        <div class="form-group checkbox">
+                            <input type="radio" name="responseMode" id="modeSuccess" value="success" checked>
+                            <label for="modeSuccess">✅ Успешный ответ (200 OK)</label>
+                        </div>
+                        <div class="form-group checkbox">
+                            <input type="radio" name="responseMode" id="modeError500" value="error_500">
+                            <label for="modeError500">❌ Ошибка сервера (500) <small>(Проверка ретраев)</small></label>
+                        </div>
+                        <div class="form-group checkbox">
+                            <input type="radio" name="responseMode" id="modeError301" value="error_301">
+                            <label for="modeError301">🔄 Редирект (301) <small>(Synapse не умеет)</small></label>
+                        </div>
+                        <div class="form-group checkbox">
+                            <input type="radio" name="responseMode" id="modeTimeout" value="timeout">
+                            <label for="modeTimeout">⏳ Зависание (Таймаут) <small>(35 сек)</small></label>
+                        </div>
+                    </div>
+
+                    <!-- Правая: Пресеты и Токен -->
+                    <div class="settings-col">
+                        <h3 style="font-size: 1.1em;">2. Кого имитируем (для 200 OK)</h3>
+                        <div class="form-group">
+                            <label for="presetSelect">Тип ответа:</label>
+                            <select id="presetSelect" onchange="toggleCustomText(); saveSettings();">
+                                <option value="bitrix24">🟦 Битрикс24 (JSON)</option>
+                                <option value="amocrm">🟩 AmoCRM (Текст)</option>
+                                <option value="universal">⚪ Универсальный (OK)</option>
+                                <option value="custom_text">✏️ Свой текст</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="expectedToken">🔑 Ожидаемый токен:</label>
+                            <input type="text" id="expectedToken" value="secret" oninput="saveSettings()">
+                            <span class="form-text">Сервис будет проверять его и подсвечивать результат в журнале.</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="customText">Текст ответа:</label>
+                            <textarea id="customText" rows="3" oninput="saveSettings()" style="font-family: monospace;">{"STATUS":"OPENED"}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Блок с URL -->
+                <div class="url-block" style="margin-top: 20px;">
+                    <div>
+                        <strong style="color: #6C4F9F;">🔗 URL для настройки СКУД:</strong><br>
+                        <code id="webhookUrl">http://127.0.0.1:8080/webhook?arg1=<%dv>&arg2=<%te>&arg3=<%ln>&token=secret</code>
+                    </div>
+                    <button class="btn btn-primary" onclick="copyUrl()">📋 Копировать</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="journal" class="tab-pane">
+            <div class="toolbar">
+                <h3 style="color: #6C4F9F; margin: 0;">📓 История запросов</h3>
+                <div style="margin-left: auto; display: flex; gap: 10px;">
+                    <button class="btn btn-secondary" onclick="exportLogs()">💾 Экспорт в TXT</button>
+                    <button class="btn btn-danger" onclick="clearLogs()">🧹 Очистить журнал</button>
+                </div>
+            </div>
+            
+            <!-- НОВЫЙ БЕЙДЖ "ОНЛАЙН" С ID ДЛЯ УПРАВЛЕНИЯ -->
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                <span id="status-indicator" class="status-badge online">
+                    <span id="status-dot" class="status-dot"></span>
+                    <span id="status-text">Онлайн. Автообновление каждые 2 сек.</span>
+                </span>
+            </div>
+            <!-- Конец бейджа -->
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 10%">Время</th>
+                        <th style="width: 8%">Метод</th>
+                        <th style="width: 10%">IP</th>
+                        <th style="width: 40%">Данные (Макросы)</th>
+                        <th style="width: 32%">User-Agent / Токен</th>
+                    </tr>
+                </thead>
+                <tbody id="logs-table-body">
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: #63666A;">Ожидание входящих запросов...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <script>
+        // --- ЛОГИКА ВКЛАДОК ---
+        function openTab(evt, tabName) {
+            document.querySelectorAll(".tab-pane").forEach(el => el.classList.remove("active"));
+            document.querySelectorAll(".tab-button").forEach(el => el.classList.remove("active"));
+            document.getElementById(tabName).classList.add("active");
+            evt.currentTarget.classList.add("active");
+        }
+
+        // --- НАСТРОЙКИ ---
+        function updateWebhookUrl() {
+            const port = document.getElementById('serverPort').value || 8080;
+            let host = window.location.hostname;
+            if (host === '0.0.0.0') host = '127.0.0.1';
+            document.getElementById('webhookUrl').innerText = `http://${host}:${port}/webhook?arg1=<%dv>&arg2=<%te>&arg3=<%ln>&token=secret`;
+        }
+
+        function toggleCustomText() {
+            const preset = document.getElementById('presetSelect').value;
+            const textarea = document.getElementById('customText');
+            if (preset === 'custom_text') {
+                textarea.disabled = false;
+            } else {
+                textarea.disabled = true;
+                const presets = { "bitrix24": '{"STATUS":"OPENED"}', "amocrm": "success", "universal": "OK" };
+                textarea.value = presets[preset] || "";
+            }
+        }
+
+                function loadSettings() {
+            fetch('/get_settings').then(r => r.json()).then(data => {
+                document.getElementById('serverPort').value = data.port || 8080;
+                document.querySelector(`input[name="responseMode"][value="${data.response_mode}"]`).checked = true;
+                document.getElementById('presetSelect').value = data.preset;
+                document.getElementById('expectedToken').value = data.expected_token || 'secret';
+                document.getElementById('customText').value = data.custom_text;
+                toggleCustomText();
+                updateWebhookUrl();
+                
+                // УПРАВЛЕНИЕ БЕЙДЖЕМ ПЕРЕЗАПУСКА
+                const badge = document.getElementById('restartBadge');
+                if (data.needs_restart) {
+                    badge.style.display = 'inline-block'; // Показываем желтый бейдж
+                } else {
+                    badge.style.display = 'none'; // Скрываем его
+                }
+            });
+        }
+
+        // --- ФУНКЦИЯ ОСТАНОВКИ СЕРВЕРА ---
+        function shutdownServer() {
+            if (confirm('Сервер будет остановлен. Продолжить?')) {
+                // 1. СНАЧАЛА отправляем запрос на сервер
+                fetch('/shutdown', { method: 'POST' })
+                    .then(response => {
+                        // 2. ПОСЛЕ успешного ответа закрываем вкладку
+                        window.close();
+                        
+                        // Если браузер заблокировал закрытие (а он часто блокирует),
+                        // показываем пользователю понятное сообщение
+                        document.body.innerHTML = `
+                            <div style="text-align: center; margin-top: 100px; font-family: sans-serif;">
+                                <h2>🛑 Сервер остановлен</h2>
+                                <p>Теперь вы можете закрыть эту вкладку вручную.</p>
+                                <p style="color: #63666A; font-size: 14px;">
+                                    Иконка в трее исчезла автоматически.<br>
+                                    Для повторного запуска нажмите на .exe файл.
+                                </p>
+                            </div>
+                        `;
+                    })
+                    .catch(err => {
+                        // Если сервер уже умер или нет связи
+                        console.log('Сервер уже остановлен.');
+                        document.body.innerHTML = `
+                            <div style="text-align: center; margin-top: 100px; font-family: sans-serif;">
+                                <h2>🛑 Сервер остановлен</h2>
+                                <p>Можете закрыть эту вкладку.</p>
+                            </div>
+                        `;
+                    });
+            }
+        }
+
+        function saveSettings() {
+            const mode = document.querySelector('input[name="responseMode"]:checked').value;
+            fetch('/set_settings', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    response_mode: mode,
+                    preset: document.getElementById('presetSelect').value,
+                    custom_text: document.getElementById('customText').value,
+                    expected_token: document.getElementById('expectedToken').value,
+                    port: parseInt(document.getElementById('serverPort').value) || 8080
+                })
+            }).then(() => {
+                updateWebhookUrl();
+                // ВАЖНО: После сохранения заново запрашиваем настройки, 
+                // чтобы бэкенд сказал нам, нужен ли теперь перезапуск!
+                loadSettings(); 
+            });
+        }
+
+        function copyUrl() {
+            navigator.clipboard.writeText(document.getElementById('webhookUrl').innerText).then(() => alert('URL скопирован!'));
+        }
+
+        // --- ЖУРНАЛ ---
+        function updateLogs() {
+            fetch('/get_logs')
+                .then(response => {
+                    // ПРОВЕРКА ПУЛЬСА: если сервер ответил кодом 200, значит он онлайн
+                    setServerStatus(response.ok); 
+                    
+                    if (!response.ok) throw new Error('Server error'); // Если ошибка (500 и т.д.), идем в catch
+                    return response.json();
+                })
+                .then(data => {
+                    // --- СТАРЫЙ КОД ОТРИСОВКИ ТАБЛИЦЫ (оставляем как был) ---
+                    const tbody = document.getElementById('logs-table-body');
+                    tbody.innerHTML = '';
+                    if (data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Ожидание запросов...</td></tr>';
+                        return;
+                    }
+                    data.forEach(log => {
+                        let dataHtml = '';
+                        if (Array.isArray(log.data)) {
+                            for (const item of log.data) dataHtml += `<div class="log-data-item"><strong>${item.k}:</strong> ${item.v}</div>`;
+                        } else {
+                            dataHtml = `<pre>${JSON.stringify(log.data)}</pre>`;
+                        }
+                        dataHtml += `<button class="btn btn-secondary copy-url-btn" style="margin-top: 8px; padding: 5px 12px; font-size: 12px;" data-url="${log.full_url}">📋 Копировать URL</button>`;
+                        const methodBadge = log.method === 'POST' ? '<span class="badge badge-warning">POST</span>' : '<span class="badge badge-info">GET</span>';
+                        let tokenBadge = '<span class="badge badge-secondary">⚪ Нет</span>';
+                        if (log.token_check && log.token_check.includes("✅")) tokenBadge = '<span class="badge badge-success">✅ Токен совпал</span>';
+                        else if (log.token_check && log.token_check.includes("❌")) tokenBadge = '<span class="badge badge-danger">❌ Ошибка</span>';
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td><code>${log.time}</code></td>
+                            <td>${methodBadge}</td>
+                            <td><code>${log.ip}</code></td>
+                            <td>${dataHtml}</td>
+                            <td>
+                                <small style="color: #63666A; display: block; margin-bottom: 5px;">${log.user_agent}</small>
+                                ${tokenBadge}
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                })
+                .catch(error => {
+                    // Если вообще нет связи (сервер упал, нет сети), срабатывает этот блок
+                    console.error('Сервер недоступен:', error);
+                    setServerStatus(false); // Делаем индикатор красным
+                });
+        }
+
+        // Функция управления внешним видом индикатора
+        function setServerStatus(isOnline) {
+            const badge = document.getElementById('status-indicator');
+            const text = document.getElementById('status-text');
+            
+            if (isOnline) {
+                badge.className = 'status-badge online'; // Включаем зеленые стили и пульс
+                text.innerText = 'Онлайн. Автообновление каждые 2 сек.';
+            } else {
+                badge.className = 'status-badge offline'; // Включаем красные стили, убираем пульс
+                text.innerText = 'Офлайн. Ожидание восстановления связи...';
+            }
+        }
+
+        function clearLogs() {
+            if (confirm('Очистить журнал?')) fetch('/clear_logs', {method: 'POST'}).then(() => updateLogs());
+        }
+
+        function exportLogs() { window.open('/export_logs', '_blank'); }
+
+        // Обработчик кнопок копирования URL в логах
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.copy-url-btn')) {
+                const btn = e.target.closest('.copy-url-btn');
+                navigator.clipboard.writeText(btn.getAttribute('data-url')).then(() => {
+                    btn.innerText = '✅ Скопировано!';
+                    setTimeout(() => btn.innerText = '📋 Копировать URL', 1500);
+                });
+            }
+        });
+
+        // --- ИНИЦИАЛИЗАЦИЯ ---
+        document.querySelectorAll('input[name="responseMode"]').forEach(el => el.addEventListener('change', saveSettings));
+        document.getElementById('serverPort').addEventListener('input', updateWebhookUrl);
+        
+        updateLogs();
+        setInterval(updateLogs, 2000);
+        loadSettings();
+    </script>
+</body>
+</html>
