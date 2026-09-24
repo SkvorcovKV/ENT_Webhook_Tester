@@ -11,6 +11,12 @@
 
 ---
 
+<p align="center">
+  <img src="static/logo.png" alt="ENT Webhook Tester Logo" width="200"/>
+</p>
+
+---
+
 ## ✨ Возможности
 
 - 🚀 **Мгновенный запуск**: Работает из одного `.exe` файла без установки Python.
@@ -27,7 +33,7 @@
 ![Главный экран](static/screenshot_main.png)
 
 ### Вкладка "Журнал"
-![Главный экран](static/screenshot_Journal.png)
+![Главный экран](static/screenshot_journal.png)
 
 ### Управление через системный трей
 ![Системный трей](static/screenshot_tray.png)
@@ -63,3 +69,70 @@ pip install -r requirements.txt  # (если есть файл, или укаж�
 
 # 4. Запустите приложение
 python main.py
+```
+---
+
+Сборка в .exe
+
+Для создания автономного исполняемого файла используется PyInstaller:
+```bash
+pyinstaller --noconfirm --onefile --windowed --name "ENT_Webhook_Tester" --icon="static\icon.ico" --add-data "static;static" --add-data "templates;templates" --add-data "version.txt;." --collect-all werkzeug main.py
+```
+---
+
+## 📄 Лицензия
+```bash
+Проект распространяется под лицензией Apache License Version 2.0, January 2004.
+
+Copyright 2026 Скворцов Константин Валерьевич
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```
+---
+
+## 👨‍💻 Автор
+
+Скворцов Константин Валерьевич
+
+📧 Email: skvorcovkv@mail.ru
+
+🐙 GitHub: @SkvorcovKV
+
+🤝 Поддержка и обратная связь
+
+---
+
+## 📞 Если у вас возникли вопросы или предложения:
+
+📧 Email: skvorcovkv@mail.ru
+
+🐛 Issue tracker: GitHub Issues https://github.com/SkvorcovKV/data-exchange-service/issues
+
+📋 Документация: Wiki https://github.com/SkvorcovKV/data-exchange-service/wiki
+
+---
+
+## ⭐️ Благодарности
+
+Сообществу Open Source за инструменты и библиотеки
+
+---
+
+📄 Документация и лицензия
+📖 Инструкция пользователя
+🔗 Настройка HTTP-интеграции в ПО «ЭНТ»
+⚖️ Использование программы регулируется файлом EULA.txt. Все права защищены.
+
+---
+
+<p align="center"> <sub>Сделано с ❤️ для тестирования и демонстрации интеграционных возможностей ПО «ЭНТ Контроль доступа»</sub> </p>
